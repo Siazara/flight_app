@@ -21,38 +21,43 @@ import {
 import AdapterJalali from '@date-io/date-fns-jalali';
 import LocalizationProvider from '@mui/lab/LocalizationProvider';
 import DatePicker from '@mui/lab/DatePicker';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Typography from '@mui/material/Typography';
 
 const cities = [{
     value: 'Tehran',
-    label: 'Tehran',
+    label: 'تهران',
   },
   {
     value: 'Mashhad',
-    label: 'Mashhad',
+    label: 'مشهد',
   },
   {
     value: 'Kish',
-    label: 'Kish',
+    label: 'کیش',
   },
   {
     value: 'Kerman',
-    label: 'Kerman',
+    label: 'کرمان',
   },
   {
     value: 'Shiraz',
-    label: 'Shiraz',
+    label: 'شیراز',
   },
   {
     value: 'Ahwaz',
-    label: 'Ahwaz',
+    label: 'اهواز',
   },
   {
     value: 'Isfahan',
-    label: 'Isfahan',
+    label: 'اصفهان',
   },
   {
     value: 'Tabriz',
-    label: 'Tabriz',
+    label: 'تبریز',
   },
 ];
 
@@ -61,43 +66,21 @@ export default class SelectTextFields extends React.Component {
       super(props);
       this.state = {
         origin: 'Tehran',
-        destination: 'Mashhad',
+        destination: 'Tabriz',
         date: null,
         flights: [],
-        checks: [],
       }
     }
 
     async displayResult() {
-      const response = await fetch("http://127.0.0.1:5000/delay", {
-        method: "POST",
-        mode: 'cors',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        redirect: 'follow',
-        referrerPolicy: 'no-referrer',
-        headers: {
-          "Content-type": "application/json; charset=UTF-8"
-        },
-        body: JSON.stringify({
-          origin: 'Tehran',
-          destination: 'Mashhad',
-          departure: "2022-01-24"
-        })
+      const response = await fetch("http://127.0.0.1:5000/get_data?origin="+this.state.origin+"&destination="+this.state.destination+"&departure="+this.state.date, {
+        mode: 'cors'
       });
       const data = await response.json()
+      console.log(response)
       this.setState({
         flights: Object.values(data)
       })
-      let checks = [];
-
-      for (let i = 0, len = this.state["flights"].length; i < len; i++) {
-        checks[i] = false;
-      }
-
-      this.setState({
-        checks: checks
-      });
 
       this.searchResult()
     };
@@ -112,17 +95,6 @@ export default class SelectTextFields extends React.Component {
           this.setState({
             destination: event.target.value
           });
-        } else if (event.target.name === 'date') {
-          this.setState({
-            date: event.target.value
-          });
-        } else if (typeof event.currentTarget.name === 'string') {
-          const checks = this.state["checks"];
-          checks[event.currentTarget.name] = !checks[event.currentTarget.name]
-          this.setState({
-            checks: checks
-          });
-          this.searchResult()
         }
       } else {
         this.setState({
@@ -133,66 +105,84 @@ export default class SelectTextFields extends React.Component {
 
   searchResult = () => {
     let rows = [];
-    for (let i=0, len = this.state["flights"].length; i < len; i++) {
+    let ontimedness = 0;
+
+    rows.push(
+    <Box sx={{ bgcolor: 'background.paper', position: 'relative', top:"55%", left:"20%", width: '60%'}}>
+      <Grid container spacing={2}>
+        <Grid item xs={8}/>
+        <Grid item xs={4}>
+          <Box
+            sx={{
+              width: 300,
+              height: 300,
+              bgcolor: 'primary.main',
+            }}
+          />
+        </Grid>
+      </Grid>
+    </Box>)
+
+    for (let i=0, len = this.state["flights"].length - 1; i < len; i++) {
       
-      rows[i] = (
-        <Stack
-          spacing={"2%"}
-          sx={{ bgcolor: 'background.paper', position: 'relative', top:"55%", left:"20%", width: '60%'}}
-          direction='column'>
-            <Stack direction='row'>
-                <ListItemButton>
-                  <Grid container spacing={2}>
-                    <Grid item xs={1}>
-                      <Grid container spacing={2} direction='column'>
-                        <Grid item textAlign='center' color='primary.main'>
-                          price: 1,200,000
-                        </Grid>
-                        <Grid item textAlign='center'>
-                          seats: 9
-                        </Grid>
-                      </Grid>
+      ontimedness = this.state["flights"][i]["ontime_or_delayed"];
+
+      rows.push(
+        <Box sx={{ bgcolor: 'background.paper', position: 'relative', top:"55%", left:"20%", width: '60%'}}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Grid container spacing={2}>
+                <Grid item xs={1}>
+                  <Grid container spacing={2} direction='column'>
+                    <Grid item textAlign='center' color='primary.main'>
+                      price: {this.state["flights"][i]["price"]}
                     </Grid>
-                    <Grid item xs={11}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={2}/>
-                        <Grid item xs={2} textAlign='center'>
-                          <FlightTakeoffIcon/>
-                        </Grid>
-                        <Grid item xs={4}/>
-                        <Grid item xs={2} textAlign='center'>
-                          <FlightLandIcon/>
-                        </Grid>
-                        <Grid item xs={2}/>
-                        <Grid item xs={2} textAlign='center'>
-                          From: Tehran
-                        </Grid>
-                        <Grid item xs={2}/>
-                        <Grid item xs={4} textAlign='center'>
-                          ...
-                        </Grid>
-                        <Grid item xs={2}/>
-                        <Grid item xs={2} textAlign='center'>
-                          To: Mashhad
-                        </Grid>
-                        <Grid item xs={6} textAlign='center' color='error.main'>
-                          prices may rise
-                        </Grid>
-                        <Grid item xs={6} textAlign='center' color='success.main'>
-                          usually ontime
-                        </Grid>
-                      </Grid>
+                    <Grid item textAlign='center'>
+                      seats: 9
                     </Grid>
                   </Grid>
-                </ListItemButton>
-                  <IconButton onClick={this.handleChange} name={i} color='inherit' edge='end'>
-                    <InfoIcon/>
-                  </IconButton>
-            </Stack>
-              <div>
-                <Collapse in={this.state["checks"][i]}>and the info is:</Collapse>
-              </div>
-        </Stack>);
+                </Grid>
+                <Grid item xs={11}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={2}/>
+                    <Grid item xs={2} textAlign='center'>
+                      <FlightTakeoffIcon/>
+                    </Grid>
+                    <Grid item xs={4}/>
+                    <Grid item xs={2} textAlign='center'>
+                      <FlightLandIcon/>
+                    </Grid>
+                    <Grid item xs={2}/>
+                    <Grid item xs={2} textAlign='center'>
+                      From: {this.state.origin}
+                    </Grid>
+                    <Grid item xs={2}/>
+                    <Grid item xs={4} textAlign='center'>
+                      ...
+                    </Grid>
+                    <Grid item xs={2}/>
+                    <Grid item xs={2} textAlign='center'>
+                      To: {this.state.destination}
+                    </Grid>
+                    <Grid item xs={6} textAlign='center' color='error.main'>
+                    </Grid>
+                    <Grid item xs={6} textAlign='center'>
+                      {(() => {
+                      if (ontimedness !== 0) {
+                        return (
+                          ontimedness == 1 ? <Typography color='success.main'>usually ontime</Typography>:<Typography color='error.main'>usually delayed</Typography>
+                        )
+                      }}) ()}
+                    </Grid>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </AccordionSummary>
+            <AccordionDetails>
+              And the info is
+            </AccordionDetails>
+          </Accordion>
+        </Box>);
       };
   
       ReactDOM.render(rows
